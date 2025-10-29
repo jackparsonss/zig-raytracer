@@ -3,8 +3,10 @@ const v = @import("vector.zig");
 const Ray = @import("ray.zig").Ray;
 
 fn ray_color(ray: Ray) v.Color {
-    _ = ray;
-    return v.Color.init(0, 0, 0);
+    const unit_direction = ray.direction.unitVector();
+    const a: f32 = 0.5 * (unit_direction.y() + 1.0);
+
+    return v.Color.init(1, 1, 1).scale(1.0 - a).add(v.Color.init(0.5, 0.7, 1.0).scale(a));
 }
 
 pub const PPMFile = struct {
@@ -45,7 +47,7 @@ pub const PPMFile = struct {
         const pixel_delta_v = viewport_v.div(@floatFromInt(self.image_height));
 
         const viewport_upper_left = camera_center.sub(v.Vec3f32.init(0, 0, focal_length)).sub(pixel_delta_u.div(2)).sub(pixel_delta_v.div(2));
-        const pixel00_loc = viewport_upper_left.scale(0.5).mul(pixel_delta_u.add(pixel_delta_v));
+        const pixel00_loc = viewport_upper_left.add(pixel_delta_u.add(pixel_delta_v).scale(0.5));
 
         try writer.print("P3\n{} {}\n255\n", .{ self.image_width, self.image_height });
         for (0..self.image_height) |j| {
