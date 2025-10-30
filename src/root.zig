@@ -46,7 +46,7 @@ pub const PPMFile = struct {
         const pixel_delta_u = viewport_u.div(@floatFromInt(self.image_width));
         const pixel_delta_v = viewport_v.div(@floatFromInt(self.image_height));
 
-        const viewport_upper_left = camera_center.sub(v.Vec3f32.init(0, 0, focal_length)).sub(pixel_delta_u.div(2)).sub(pixel_delta_v.div(2));
+        const viewport_upper_left = camera_center.sub(v.Vec3f32.init(0, 0, focal_length)).sub(viewport_u.div(2)).sub(viewport_v.div(2));
         const pixel00_loc = viewport_upper_left.add(pixel_delta_u.add(pixel_delta_v).scale(0.5));
 
         try writer.print("P3\n{} {}\n255\n", .{ self.image_width, self.image_height });
