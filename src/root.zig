@@ -2,10 +2,23 @@ const std = @import("std");
 const v = @import("vector.zig");
 const Ray = @import("ray.zig").Ray;
 
+fn hit_sphere(center: v.Point, radius: f32, ray: *const Ray) bool {
+    const oc = center.sub(ray.origin);
+    const a = v.Vec3f32.dot(ray.direction, ray.direction);
+    const b = -2.0 * v.Vec3f32.dot(ray.direction, oc);
+    const c = v.Vec3f32.dot(oc, oc) - radius * radius;
+    const discriminant = b * b - 4 * a * c;
+
+    return discriminant >= 0;
+}
+
 fn ray_color(ray: Ray) v.Color {
+    if (hit_sphere(v.Point.init(0, 0, -1), 0.5, &ray)) {
+        return v.Color.init(1, 0, 0);
+    }
+
     const unit_direction = ray.direction.unitVector();
     const a: f32 = 0.5 * (unit_direction.y() + 1.0);
-
     return v.Color.init(1, 1, 1).scale(1.0 - a).add(v.Color.init(0.5, 0.7, 1.0).scale(a));
 }
 
@@ -23,7 +36,7 @@ pub const PPMFile = struct {
         image_height = if (image_height < 1) 1 else image_height;
 
         const viewport_height: f32 = 2.0;
-        const viewport_width = viewport_height * (image_width / image_height);
+        const viewport_width = viewport_height * (@as(f32, @floatFromInt(image_width)) / @as(f32, @floatFromInt(image_height)));
 
         return PPMFile{ .image_height = image_height, .image_width = image_width, .viewport_height = viewport_height, .viewport_width = viewport_width };
     }
