@@ -2,10 +2,11 @@ const std = @import("std");
 const v = @import("vector.zig");
 const Ray = @import("ray.zig").Ray;
 const h = @import("hittable.zig");
+const Interval = @import("interval.zig").Interval;
 
 fn ray_color(ray: Ray, world: *const h.HittableList) v.Color {
     var rec: h.HitRecord = undefined;
-    if (world.hit(ray, 0, std.math.inf(f32), &rec)) {
+    if (world.hit(ray, Interval.init(0, std.math.inf(f32)), &rec)) {
         return rec.normal.add(v.Color.init(1, 1, 1)).scale(0.5);
     }
 
