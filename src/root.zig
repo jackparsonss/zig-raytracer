@@ -1,20 +1,12 @@
 const std = @import("std");
 const v = @import("vector.zig");
 const Ray = @import("ray.zig").Ray;
+const h = @import("hittable.zig");
 
-fn hit_sphere(center: v.Point, radius: f32, ray: *const Ray) bool {
-    const oc = center.sub(ray.origin);
-    const a = v.Vec3f32.dot(ray.direction, ray.direction);
-    const b = -2.0 * v.Vec3f32.dot(ray.direction, oc);
-    const c = v.Vec3f32.dot(oc, oc) - radius * radius;
-    const discriminant = b * b - 4 * a * c;
-
-    return discriminant >= 0;
-}
-
-fn ray_color(ray: Ray) v.Color {
-    if (hit_sphere(v.Point.init(0, 0, -1), 0.5, &ray)) {
-        return v.Color.init(1, 0, 0);
+fn ray_color(ray: Ray, world: *const h.HittableList) v.Color {
+    var rec: h.HitRecord = undefined;
+    if (world.hit(ray, 0, std.math.inf(f32), &rec)) {
+        return rec.normal.add(v.Color.init(1, 1, 1)).scale(0.5);
     }
 
     const unit_direction = ray.direction.unitVector();
@@ -62,6 +54,13 @@ pub const PPMFile = struct {
         const viewport_upper_left = camera_center.sub(v.Vec3f32.init(0, 0, focal_length)).sub(viewport_u.div(2)).sub(viewport_v.div(2));
         const pixel00_loc = viewport_upper_left.add(pixel_delta_u.add(pixel_delta_v).scale(0.5));
 
+        const gpa = std.heap.page_allocator;
+        var world = h.HittableList.init();
+        defer world.deinit(gpa);
+
+        try world.add(.{ .sphere = h.Sphere.init(v.Point.init(0, 0, -1), 0.5) }, gpa);
+        try world.add(.{ .sphere = h.Sphere.init(v.Point.init(0, -100.5, -1), 100) }, gpa);
+
         try writer.print("P3\n{} {}\n255\n", .{ self.image_width, self.image_height });
         for (0..self.image_height) |j| {
             std.debug.print("\rLines remaining: {}", .{self.image_height - j});
@@ -69,7 +68,7 @@ pub const PPMFile = struct {
                 const pixel_center = pixel00_loc.add(pixel_delta_u.scale(@floatFromInt(i))).add(pixel_delta_v.scale(@floatFromInt(j)));
                 const ray_direction = pixel_center.sub(camera_center);
                 const ray = Ray{ .origin = camera_center, .direction = ray_direction };
-                const color = ray_color(ray);
+                const color = ray_color(ray, &world);
                 try v.write_color(writer, color);
             }
         }
