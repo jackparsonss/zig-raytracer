@@ -16,7 +16,7 @@ pub const PPMFile = struct {
         return PPMFile{ .camera = camera };
     }
 
-    pub fn write(self: PPMFile) !void {
+    pub fn write(self: PPMFile, world: *h.HittableList) !void {
         const file = try std.fs.cwd().createFile("output/image.ppm", .{ .truncate = true });
         defer file.close();
 
@@ -24,18 +24,18 @@ pub const PPMFile = struct {
         var file_writer = file.writer(&write_buffer);
         const writer: *std.Io.Writer = &file_writer.interface;
 
-        const gpa = std.heap.page_allocator;
-        var world = h.HittableList.init();
-        defer world.deinit(gpa);
-
-        try world.add(.{ .sphere = h.Sphere.init(v.Point.init(0, 0, -1), 0.5) }, gpa);
-        try world.add(.{ .sphere = h.Sphere.init(v.Point.init(0, -100.5, -1), 100) }, gpa);
-
         try self.camera.render(world, writer);
     }
 };
 
 pub fn run() !void {
+    const gpa = std.heap.page_allocator;
+    var world = h.HittableList.init();
+    defer world.deinit(gpa);
+
+    try world.add(.{ .sphere = h.Sphere.init(v.Point.init(0, 0, -1), 0.5) }, gpa);
+    try world.add(.{ .sphere = h.Sphere.init(v.Point.init(0, -100.5, -1), 100) }, gpa);
+
     const f = PPMFile.init();
-    try f.write();
+    try f.write(&world);
 }

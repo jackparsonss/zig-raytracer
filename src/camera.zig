@@ -45,7 +45,7 @@ pub const Camera = struct {
         };
     }
 
-    pub fn render(self: Camera, world: h.HittableList, writer: *std.Io.Writer) !void {
+    pub fn render(self: Camera, world: *h.HittableList, writer: *std.Io.Writer) !void {
         try writer.print("P3\n{} {}\n255\n", .{ self.image_width, self.image_height });
         for (0..self.image_height) |j| {
             std.debug.print("\rLines remaining: {}", .{self.image_height - j});
@@ -53,7 +53,7 @@ pub const Camera = struct {
                 const pixel_center = self.pixel00_loc.add(self.pixel_delta_u.scale(@floatFromInt(i))).add(self.pixel_delta_v.scale(@floatFromInt(j)));
                 const ray_direction = pixel_center.sub(self.center);
                 const ray = Ray{ .origin = self.center, .direction = ray_direction };
-                const color = ray_color(ray, &world);
+                const color = ray_color(ray, world);
                 try v.write_color(writer, color);
             }
         }
