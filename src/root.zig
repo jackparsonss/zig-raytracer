@@ -12,8 +12,9 @@ pub const PPMFile = struct {
         const aspect_ratio = 16.0 / 9.0;
         const image_width = 400;
         const samples_per_pixel = 10;
+        const max_depth = 10;
 
-        const camera = Camera.init(aspect_ratio, image_width, samples_per_pixel);
+        const camera = Camera.init(aspect_ratio, image_width, samples_per_pixel, max_depth);
         return PPMFile{ .camera = camera };
     }
 

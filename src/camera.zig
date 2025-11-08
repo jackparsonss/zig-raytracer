@@ -17,8 +17,9 @@ pub const Camera = struct {
     pixel_samples_scale: f32,
     pixel_delta_u: v.Vec3f32,
     pixel_delta_v: v.Vec3f32,
+    max_depth: u32,
 
-    pub fn init(aspect_ratio: f32, image_width: u32, samples_per_pixel: u32) Camera {
+    pub fn init(aspect_ratio: f32, image_width: u32, samples_per_pixel: u32, max_depth: u32) Camera {
         var image_height: u32 = @intFromFloat(@as(f32, @floatFromInt(image_width)) / aspect_ratio);
         image_height = if (image_height < 1) 1 else image_height;
 
@@ -50,25 +51,27 @@ pub const Camera = struct {
             .pixel_delta_v = pixel_delta_v,
             .samples_per_pixel = samples_per_pixel,
             .pixel_samples_scale = pixel_samples_scale,
+            .max_depth = max_depth,
         };
     }
 
     pub fn render(self: Camera, world: *h.HittableList, writer: *std.Io.Writer) !void {
         try writer.print("P3\n{} {}\n255\n", .{ self.image_width, self.image_height });
         for (0..self.image_height) |j| {
-            std.debug.print("\rLines remaining: {}", .{self.image_height - j});
+            const percentage = @as(u32, @intCast(j)) * 100 / self.image_height;
+            std.debug.print("\rProgress: {}% ", .{percentage});
             for (0..self.image_width) |i| {
                 var pixel_color = v.Color.init(0, 0, 0);
                 for (0..self.samples_per_pixel) |_| {
                     const r = self.get_ray(i, j);
-                    pixel_color = pixel_color.add(ray_color(r, world));
+                    pixel_color = pixel_color.add(ray_color(r, self.max_depth, world));
                 }
                 pixel_color = pixel_color.scale(self.pixel_samples_scale);
                 try v.write_color(writer, pixel_color);
             }
         }
 
-        std.debug.print("\rDone.                 \n", .{});
+        std.debug.print("\rDone.                     \n", .{});
         try writer.flush();
     }
 
@@ -89,10 +92,16 @@ pub const Camera = struct {
         return v.Vec3f32.init(rand.float(f32) - 0.5, rand.float(f32) - 0.5, 0);
     }
 
-    pub fn ray_color(ray: Ray, world: *const h.HittableList) v.Color {
+    pub fn ray_color(ray: Ray, depth: u32, world: *const h.HittableList) v.Color {
+        if (depth <= 0) {
+            return v.Color.init(0, 0, 0);
+        }
+
         var rec: h.HitRecord = undefined;
+        const rand = rand_state.random();
         if (world.hit(ray, Interval.init(0.001, std.math.inf(f32)), &rec)) {
-            return rec.normal.add(v.Color.init(1, 1, 1)).scale(0.5);
+            const direction = v.Vec3f32.randomOnHemisphere(rand, rec.normal);
+            return ray_color(Ray{ .origin = rec.p, .direction = direction }, depth - 1, world).scale(0.5);
         }
 
         const unit_direction = ray.direction.unitVector();

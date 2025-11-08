@@ -123,6 +123,53 @@ pub fn Vec3(comptime T: type) type {
             return v.div(v.length());
         }
 
+        pub fn random(r: std.Random) Self {
+            const T_info = @typeInfo(T);
+            return switch (T_info) {
+                .float => Self.init(r.float(T), r.float(T), r.float(T)),
+                .int => Self.init(r.int(T), r.int(T), r.int(T)),
+                else => @compileError("Unsupported type for random vector generation"),
+            };
+        }
+
+        pub fn randomRange(r: std.Random, min: T, max: T) Self {
+            const T_info = @typeInfo(T);
+            return switch (T_info) {
+                .float => {
+                    const xval = r.float(T) * (max - min) + min;
+                    const yval = r.float(T) * (max - min) + min;
+                    const zval = r.float(T) * (max - min) + min;
+                    return Self.init(xval, yval, zval);
+                },
+                .int => {
+                    const xval = r.intRange(T, min, max);
+                    const yval = r.intRange(T, min, max);
+                    const zval = r.intRange(T, min, max);
+                    return Self.init(xval, yval, zval);
+                },
+                else => @compileError("Unsupported type for random vector generation"),
+            };
+        }
+
+        pub fn randomUnitVector(r: std.Random) Self {
+            while (true) {
+                const p = Self.randomRange(r, -1, 1);
+                const lensq = p.lengthSquared();
+                if (std.math.floatEpsAt(T, 0) < lensq and lensq <= 1) {
+                    return p.div(@sqrt(lensq));
+                }
+            }
+        }
+
+        pub fn randomOnHemisphere(r: std.Random, normal: Self) Self {
+            const on_unit_sphere = Self.randomUnitVector(r);
+            if (normal.dot(on_unit_sphere) > 0.0) {
+                return on_unit_sphere;
+            }
+
+            return on_unit_sphere.negate();
+        }
+
         pub fn format(self: Self, writer: *std.Io.Writer) !void {
             try writer.print("{d} {d} {d}\n", .{ self.e[0], self.e[1], self.e[2] });
         }
