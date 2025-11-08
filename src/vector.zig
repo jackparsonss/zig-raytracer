@@ -1,4 +1,5 @@
 const std = @import("std");
+const Interval = @import("interval.zig").Interval;
 
 pub fn Vec3(comptime T: type) type {
     return struct {
@@ -133,10 +134,12 @@ pub const Vec3f32 = Vec3(f32);
 pub const Point = Vec3f32;
 pub const Color = Vec3f32;
 
+const intensity: Interval = Interval.init(0.000, 0.999);
+
 pub fn write_color(writer: *std.Io.Writer, color: Color) !void {
-    const ir: i32 = @as(i32, @intFromFloat(255.999 * color.x()));
-    const ig: i32 = @as(i32, @intFromFloat(255.999 * color.y()));
-    const ib: i32 = @as(i32, @intFromFloat(255.999 * color.z()));
+    const ir: i32 = @intFromFloat(256 * intensity.clamp(color.x()));
+    const ig: i32 = @intFromFloat(256 * intensity.clamp(color.y()));
+    const ib: i32 = @intFromFloat(256 * intensity.clamp(color.z()));
 
     try writer.print("{} {} {}\n", .{ ir, ig, ib });
 }

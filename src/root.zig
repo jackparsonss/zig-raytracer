@@ -9,10 +9,11 @@ pub const PPMFile = struct {
     camera: Camera,
 
     pub fn init() PPMFile {
-        const aspect_ratio: f32 = 16.0 / 9.0;
-        const image_width: u32 = 400;
+        const aspect_ratio = 16.0 / 9.0;
+        const image_width = 400;
+        const samples_per_pixel = 10;
 
-        const camera = Camera.init(aspect_ratio, image_width);
+        const camera = Camera.init(aspect_ratio, image_width, samples_per_pixel);
         return PPMFile{ .camera = camera };
     }
 

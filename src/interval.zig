@@ -19,6 +19,18 @@ pub const Interval = struct {
     pub fn surrounds(self: Interval, value: f32) bool {
         return self.min < value and value < self.max;
     }
+
+    pub fn clamp(self: Interval, value: f32) f32 {
+        if (value < self.min) {
+            return self.min;
+        }
+
+        if (value > self.max) {
+            return self.max;
+        }
+
+        return value;
+    }
 };
 
 pub const empty = Interval.init(std.math.floatMax(f32), std.math.floatMin(f32));
