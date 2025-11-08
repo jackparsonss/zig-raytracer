@@ -100,8 +100,8 @@ pub const Camera = struct {
         var rec: h.HitRecord = undefined;
         const rand = rand_state.random();
         if (world.hit(ray, Interval.init(0.001, std.math.inf(f32)), &rec)) {
-            const direction = v.Vec3f32.randomOnHemisphere(rand, rec.normal);
-            return ray_color(Ray{ .origin = rec.p, .direction = direction }, depth - 1, world).scale(0.5);
+            const direction = rec.normal.add(v.Vec3f32.randomUnitVector(rand));
+            return ray_color(Ray{ .origin = rec.p, .direction = direction }, depth - 1, world).scale(0.3);
         }
 
         const unit_direction = ray.direction.unitVector();

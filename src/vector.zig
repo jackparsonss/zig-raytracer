@@ -183,10 +183,22 @@ pub const Color = Vec3f32;
 
 const intensity: Interval = Interval.init(0.000, 0.999);
 
+fn linearToGamma(linear_component: f32) f32 {
+    if (linear_component > 0) {
+        return @sqrt(linear_component);
+    }
+
+    return 0;
+}
+
 pub fn write_color(writer: *std.Io.Writer, color: Color) !void {
-    const ir: i32 = @intFromFloat(256 * intensity.clamp(color.x()));
-    const ig: i32 = @intFromFloat(256 * intensity.clamp(color.y()));
-    const ib: i32 = @intFromFloat(256 * intensity.clamp(color.z()));
+    const x = linearToGamma(color.x());
+    const y = linearToGamma(color.y());
+    const z = linearToGamma(color.z());
+
+    const ir: i32 = @intFromFloat(256 * intensity.clamp(x));
+    const ig: i32 = @intFromFloat(256 * intensity.clamp(y));
+    const ib: i32 = @intFromFloat(256 * intensity.clamp(z));
 
     try writer.print("{} {} {}\n", .{ ir, ig, ib });
 }
