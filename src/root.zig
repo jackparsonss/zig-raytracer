@@ -36,10 +36,10 @@ pub fn run() !void {
     var world = h.HittableList.init();
     defer world.deinit(gpa);
 
-    const material_ground = m.Material{ .lambertion = m.Lambertion{ .albedo = v.Color.init(0.8, 0.8, 0.0) } };
-    const material_center = m.Material{ .lambertion = m.Lambertion{ .albedo = v.Color.init(0.1, 0.2, 0.5) } };
-    const material_left = m.Material{ .metal = m.Metal{ .albedo = v.Color.init(0.8, 0.8, 0.8) } };
-    const material_right = m.Material{ .metal = m.Metal{ .albedo = v.Color.init(0.8, 0.6, 0.2) } };
+    const material_ground: m.Material = .{ .lambertion = m.Lambertion{ .albedo = v.Color.init(0.8, 0.8, 0.0) } };
+    const material_center: m.Material = .{ .lambertion = m.Lambertion{ .albedo = v.Color.init(0.1, 0.2, 0.5) } };
+    const material_left: m.Material = .{ .metal = m.Metal{ .albedo = v.Color.init(0.8, 0.8, 0.8) } };
+    const material_right: m.Material = .{ .metal = m.Metal{ .albedo = v.Color.init(0.8, 0.6, 0.2) } };
 
     try world.add(.{ .sphere = h.Sphere.init(v.Point.init(0.0, -100.5, -1.0), 100, material_ground) }, gpa);
     try world.add(.{ .sphere = h.Sphere.init(v.Point.init(0.0, 0.0, -1.2), 0.5, material_center) }, gpa);
