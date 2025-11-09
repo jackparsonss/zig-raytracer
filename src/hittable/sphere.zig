@@ -37,7 +37,7 @@ pub const Sphere = struct {
         rec.p = ray.at(rec.t);
         const outward_normal = rec.p.sub(self.center).div(self.radius);
         rec.set_face_normal(&ray, outward_normal);
-        rec.mat = self.material;
+        rec.material = self.material;
 
         return true;
     }

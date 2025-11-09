@@ -163,7 +163,7 @@ pub fn Vec3(comptime T: type) type {
 
         pub fn nearZero(self: Self) bool {
             const s: T = 1e-8;
-            return (std.math.abs(self.e[0]) < s) and (std.math.abs(self.e[1]) < s) and (std.math.abs(self.e[2]) < s);
+            return (@abs(self.e[0]) < s) and (@abs(self.e[1]) < s) and (@abs(self.e[2]) < s);
         }
 
         pub fn reflect(v: Self, n: Self) Self {

@@ -101,7 +101,7 @@ pub const Camera = struct {
         if (world.hit(ray, Interval.init(0.001, std.math.inf(f32)), &rec)) {
             var scattered: Ray = undefined;
             var attenuation: v.Color = undefined;
-            if (rec.material.scatter(&rec, &attenuation, &scattered)) {
+            if (rec.material.scatter(ray, &rec, &attenuation, &scattered)) {
                 return attenuation.mul(ray_color(scattered, depth - 1, world));
             }
             return v.Color.init(0, 0, 0);
