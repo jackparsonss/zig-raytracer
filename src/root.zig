@@ -20,6 +20,9 @@ pub const PPMFile = struct {
         const lookat = v.Point.init(0, 0, -1);
         const vup = v.Vec3f32.init(0, 1, 0);
 
+        const defocus_angle = 0.0;
+        const defocus_dist = 10.0;
+
         const camera = Camera.init(
             aspect_ratio,
             image_width,
@@ -29,6 +32,8 @@ pub const PPMFile = struct {
             lookat,
             lookfrom,
             vup,
+            defocus_angle,
+            defocus_dist,
         );
         return PPMFile{ .camera = camera };
     }

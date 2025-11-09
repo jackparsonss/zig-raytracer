@@ -186,6 +186,19 @@ pub fn Vec3(comptime T: type) type {
             return on_unit_sphere.negate();
         }
 
+        pub fn randomInUnitDisk(r: std.Random) Self {
+            while (true) {
+                const p = Self.init(
+                    r.float(T) * 2 - 1,
+                    r.float(T) * 2 - 1,
+                    0,
+                );
+                if (p.lengthSquared() < 1) {
+                    return p;
+                }
+            }
+        }
+
         pub fn format(self: Self, writer: *std.Io.Writer) !void {
             try writer.print("{d} {d} {d}\n", .{ self.e[0], self.e[1], self.e[2] });
         }
