@@ -2,13 +2,15 @@ const HitRecord = @import("hit_record.zig").HitRecord;
 const Ray = @import("../ray.zig").Ray;
 const v = @import("../vector.zig");
 const Interval = @import("../interval.zig").Interval;
+const Material = @import("../material/material.zig").Material;
 
 pub const Sphere = struct {
     center: v.Point,
     radius: f32,
+    material: Material,
 
-    pub fn init(center: v.Point, radius: f32) Sphere {
-        return .{ .center = center, .radius = @max(0, radius) };
+    pub fn init(center: v.Point, radius: f32, material: Material) Sphere {
+        return .{ .center = center, .radius = @max(0, radius), .material = material };
     }
 
     pub fn hit(self: Sphere, ray: Ray, ray_t: Interval, rec: *HitRecord) bool {
@@ -35,6 +37,7 @@ pub const Sphere = struct {
         rec.p = ray.at(rec.t);
         const outward_normal = rec.p.sub(self.center).div(self.radius);
         rec.set_face_normal(&ray, outward_normal);
+        rec.mat = self.material;
 
         return true;
     }

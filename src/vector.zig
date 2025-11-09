@@ -161,6 +161,15 @@ pub fn Vec3(comptime T: type) type {
             }
         }
 
+        pub fn nearZero(self: Self) bool {
+            const s: T = 1e-8;
+            return (std.math.abs(self.e[0]) < s) and (std.math.abs(self.e[1]) < s) and (std.math.abs(self.e[2]) < s);
+        }
+
+        pub fn reflect(v: Self, n: Self) Self {
+            return v.sub(n.scale(2 * v.dot(n)));
+        }
+
         pub fn randomOnHemisphere(r: std.Random, normal: Self) Self {
             const on_unit_sphere = Self.randomUnitVector(r);
             if (normal.dot(on_unit_sphere) > 0.0) {

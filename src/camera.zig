@@ -98,10 +98,13 @@ pub const Camera = struct {
         }
 
         var rec: h.HitRecord = undefined;
-        const rand = rand_state.random();
         if (world.hit(ray, Interval.init(0.001, std.math.inf(f32)), &rec)) {
-            const direction = rec.normal.add(v.Vec3f32.randomUnitVector(rand));
-            return ray_color(Ray{ .origin = rec.p, .direction = direction }, depth - 1, world).scale(0.3);
+            var scattered: Ray = undefined;
+            var attenuation: v.Color = undefined;
+            if (rec.material.scatter(&rec, &attenuation, &scattered)) {
+                return attenuation.mul(ray_color(scattered, depth - 1, world));
+            }
+            return v.Color.init(0, 0, 0);
         }
 
         const unit_direction = ray.direction.unitVector();
