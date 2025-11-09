@@ -14,8 +14,22 @@ pub const PPMFile = struct {
         const image_width = 400;
         const samples_per_pixel = 10;
         const max_depth = 10;
+        const fov = 90.0;
 
-        const camera = Camera.init(aspect_ratio, image_width, samples_per_pixel, max_depth);
+        const lookfrom = v.Point.init(0, 0, 0);
+        const lookat = v.Point.init(0, 0, -1);
+        const vup = v.Vec3f32.init(0, 1, 0);
+
+        const camera = Camera.init(
+            aspect_ratio,
+            image_width,
+            samples_per_pixel,
+            max_depth,
+            fov,
+            lookat,
+            lookfrom,
+            vup,
+        );
         return PPMFile{ .camera = camera };
     }
 

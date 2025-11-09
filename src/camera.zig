@@ -1,41 +1,59 @@
 const std = @import("std");
-const v = @import("vector.zig");
+const vec = @import("vector.zig");
 const h = @import("hittable.zig");
 const Ray = @import("ray.zig").Ray;
 const Interval = @import("interval.zig").Interval;
 
 pub threadlocal var rand_state = std.Random.DefaultPrng.init(70);
 
+const pi: f32 = 3.1415926535897932385;
+
+// Utility Functions
+
+fn degrees_to_radians(degrees: f32) f32 {
+    return degrees * pi / 180.0;
+}
+
 pub const Camera = struct {
     aspect_ratio: f32,
     focal_length: f32,
     image_width: u32,
     image_height: u32,
-    center: v.Point,
-    pixel00_loc: v.Point,
+    center: vec.Point,
+    pixel00_loc: vec.Point,
     samples_per_pixel: u32,
     pixel_samples_scale: f32,
-    pixel_delta_u: v.Vec3f32,
-    pixel_delta_v: v.Vec3f32,
+    pixel_delta_u: vec.Vec3f32,
+    pixel_delta_v: vec.Vec3f32,
     max_depth: u32,
+    fov: f32,
+    lookat: vec.Point,
+    lookfrom: vec.Point,
+    vup: vec.Vec3f32,
 
-    pub fn init(aspect_ratio: f32, image_width: u32, samples_per_pixel: u32, max_depth: u32) Camera {
+    pub fn init(aspect_ratio: f32, image_width: u32, samples_per_pixel: u32, max_depth: u32, fov: f32, lookat: vec.Point, lookfrom: vec.Point, vup: vec.Vec3f32) Camera {
         var image_height: u32 = @intFromFloat(@as(f32, @floatFromInt(image_width)) / aspect_ratio);
         image_height = if (image_height < 1) 1 else image_height;
 
-        const viewport_height: f32 = 2.0;
+        const center = lookfrom;
+        const focal_length = lookfrom.sub(lookat).length();
+        const theta = degrees_to_radians(fov);
+        const hval = @tan(theta / 2.0);
+
+        const viewport_height = 2 * hval * focal_length;
         const viewport_width = viewport_height * (@as(f32, @floatFromInt(image_width)) / @as(f32, @floatFromInt(image_height)));
 
-        const focal_length = 1.0;
-        const center = v.Point.init(0, 0, 0);
+        const w = lookfrom.sub(lookat).unitVector();
+        const u = vup.cross(w).unitVector();
+        const v = w.cross(u);
 
-        const viewport_u = v.Vec3f32.init(viewport_width, 0, 0);
-        const viewport_v = v.Vec3f32.init(0, -viewport_height, 0);
+        const viewport_u = u.scale(viewport_width);
+        const viewport_v = v.negate().scale(viewport_height);
 
         const pixel_delta_u = viewport_u.div(@floatFromInt(image_width));
         const pixel_delta_v = viewport_v.div(@floatFromInt(image_height));
 
-        const viewport_upper_left = center.sub(v.Vec3f32.init(0, 0, focal_length)).sub(viewport_u.div(2)).sub(viewport_v.div(2));
+        const viewport_upper_left = center.sub(w.scale(focal_length)).sub(viewport_u.div(2)).sub(viewport_v.div(2));
         const pixel00_loc = viewport_upper_left.add(pixel_delta_u.add(pixel_delta_v).scale(0.5));
 
         const pixel_samples_scale = 1.0 / @as(f32, @floatFromInt(samples_per_pixel));
@@ -52,6 +70,10 @@ pub const Camera = struct {
             .samples_per_pixel = samples_per_pixel,
             .pixel_samples_scale = pixel_samples_scale,
             .max_depth = max_depth,
+            .fov = fov,
+            .lookat = lookat,
+            .lookfrom = lookfrom,
+            .vup = vup,
         };
     }
 
@@ -61,13 +83,13 @@ pub const Camera = struct {
             const percentage = @as(u32, @intCast(j)) * 100 / self.image_height;
             std.debug.print("\rProgress: {}% ", .{percentage});
             for (0..self.image_width) |i| {
-                var pixel_color = v.Color.init(0, 0, 0);
+                var pixel_color = vec.Color.init(0, 0, 0);
                 for (0..self.samples_per_pixel) |_| {
                     const r = self.get_ray(i, j);
                     pixel_color = pixel_color.add(ray_color(r, self.max_depth, world));
                 }
                 pixel_color = pixel_color.scale(self.pixel_samples_scale);
-                try v.write_color(writer, pixel_color);
+                try vec.write_color(writer, pixel_color);
             }
         }
 
@@ -87,28 +109,28 @@ pub const Camera = struct {
         return Ray{ .origin = self.center, .direction = ray_direction };
     }
 
-    fn sample_square() v.Vec3f32 {
+    fn sample_square() vec.Vec3f32 {
         const rand = rand_state.random();
-        return v.Vec3f32.init(rand.float(f32) - 0.5, rand.float(f32) - 0.5, 0);
+        return vec.Vec3f32.init(rand.float(f32) - 0.5, rand.float(f32) - 0.5, 0);
     }
 
-    pub fn ray_color(ray: Ray, depth: u32, world: *const h.HittableList) v.Color {
+    pub fn ray_color(ray: Ray, depth: u32, world: *const h.HittableList) vec.Color {
         if (depth <= 0) {
-            return v.Color.init(0, 0, 0);
+            return vec.Color.init(0, 0, 0);
         }
 
         var rec: h.HitRecord = undefined;
         if (world.hit(ray, Interval.init(0.001, std.math.inf(f32)), &rec)) {
             var scattered: Ray = undefined;
-            var attenuation: v.Color = undefined;
+            var attenuation: vec.Color = undefined;
             if (rec.material.scatter(ray, &rec, &attenuation, &scattered)) {
                 return attenuation.mul(ray_color(scattered, depth - 1, world));
             }
-            return v.Color.init(0, 0, 0);
+            return vec.Color.init(0, 0, 0);
         }
 
         const unit_direction = ray.direction.unitVector();
         const a: f32 = 0.5 * (unit_direction.y() + 1.0);
-        return v.Color.init(1, 1, 1).scale(1.0 - a).add(v.Color.init(0.5, 0.7, 1.0).scale(a));
+        return vec.Color.init(1, 1, 1).scale(1.0 - a).add(vec.Color.init(0.5, 0.7, 1.0).scale(a));
     }
 };
