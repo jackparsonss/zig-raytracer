@@ -38,7 +38,7 @@ pub fn run() !void {
 
     const material_ground: m.Material = .{ .lambertion = m.Lambertion{ .albedo = v.Color.init(0.8, 0.8, 0.0) } };
     const material_center: m.Material = .{ .lambertion = m.Lambertion{ .albedo = v.Color.init(0.1, 0.2, 0.5) } };
-    const material_left: m.Material = .{ .metal = m.Metal.init(v.Color.init(0.8, 0.8, 0.8), 0.3) };
+    const material_left: m.Material = .{ .dialeretic = m.Dialetric.init(1.5) };
     const material_right: m.Material = .{ .metal = m.Metal.init(v.Color.init(0.8, 0.6, 0.2), 1.0) };
 
     try world.add(.{ .sphere = h.Sphere.init(v.Point.init(0.0, -100.5, -1.0), 100, material_ground) }, gpa);

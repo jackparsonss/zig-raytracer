@@ -170,6 +170,13 @@ pub fn Vec3(comptime T: type) type {
             return v.sub(n.scale(2 * v.dot(n)));
         }
 
+        pub fn refract(uv: Self, n: Self, etai_over_etat: T) Self {
+            const cos_theta = @min(uv.negate().dot(n), 1.0);
+            const r_out_perp = uv.add(n.scale(cos_theta)).scale(etai_over_etat);
+            const r_out_parallel = n.scale(-@sqrt(@abs(1.0 - r_out_perp.lengthSquared())));
+            return r_out_perp.add(r_out_parallel);
+        }
+
         pub fn randomOnHemisphere(r: std.Random, normal: Self) Self {
             const on_unit_sphere = Self.randomUnitVector(r);
             if (normal.dot(on_unit_sphere) > 0.0) {
