@@ -109,7 +109,7 @@ pub const Camera = struct {
         const pixel_sample = self.pixel00_loc.add(uvec).add(vvec);
 
         const ray_origin = if (self.defocus_angle <= 0) self.center else self.defocus_sample_disk();
-        const ray_direction = pixel_sample.sub(self.center);
+        const ray_direction = pixel_sample.sub(ray_origin);
 
         return Ray{ .origin = ray_origin, .direction = ray_direction };
     }
