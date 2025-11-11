@@ -75,7 +75,7 @@ pub const Camera = struct {
         };
     }
 
-    pub fn render(self: Camera, world: *h.HittableList, writer: *std.Io.Writer) !void {
+    pub fn renderToBuffer(self: Camera, world: *h.HittableList) ![]const [3]u8 {
         var pbuf: [1024]u8 = undefined;
         const pr = std.Progress.start(.{
             .draw_buffer = &pbuf,
@@ -90,7 +90,6 @@ pub const Camera = struct {
         try pool.init(.{ .allocator = gpa });
 
         var wg: std.Thread.WaitGroup = .{};
-        try writer.print("P6\n{} {}\n255\n", .{ self.image_width, self.image_height });
 
         for (0..self.image_height) |j| {
             pool.spawnWg(&wg, computeRow, .{
@@ -103,8 +102,7 @@ pub const Camera = struct {
         }
 
         pool.waitAndWork(&wg);
-        try writer.writeSliceEndian(u8, std.mem.sliceAsBytes(out_buf), .little);
-        try writer.flush();
+        return out_buf;
     }
 
     pub fn computeRow(self: Camera, height: usize, world: *h.HittableList, out: [][3]u8, pr: std.Progress.Node) void {

@@ -5,57 +5,55 @@ const h = @import("hittable.zig");
 const m = @import("material.zig");
 const Interval = @import("interval.zig").Interval;
 const Camera = @import("camera.zig").Camera;
-
-pub const PPMFile = struct {
-    camera: Camera,
-
-    pub fn init() PPMFile {
-        const aspect_ratio = 16.0 / 9.0;
-        const image_width = 1080;
-        const samples_per_pixel = 500;
-        const max_depth = 50;
-        const fov = 20.0;
-
-        const lookfrom: v.Point = .{ 13, 2, 3 };
-        const lookat: v.Point = .{ 0, 0, 0 };
-        const vup: v.Vec3 = .{ 0, 1, 0 };
-
-        const defocus_angle = 0.6;
-        const defocus_dist = 10.0;
-
-        const camera = Camera.init(
-            aspect_ratio,
-            image_width,
-            samples_per_pixel,
-            max_depth,
-            fov,
-            lookat,
-            lookfrom,
-            vup,
-            defocus_angle,
-            defocus_dist,
-        );
-        return PPMFile{ .camera = camera };
-    }
-
-    pub fn write(self: PPMFile, world: *h.HittableList) !void {
-        const file = try std.fs.cwd().createFile("output/image.ppm", .{ .truncate = true });
-        defer file.close();
-
-        var write_buffer: [4096]u8 = undefined;
-        var file_writer = file.writer(&write_buffer);
-        const writer: *std.Io.Writer = &file_writer.interface;
-
-        try self.camera.render(world, writer);
-    }
-};
+const renderer = @import("renderer.zig");
 
 pub threadlocal var rand_state = std.Random.DefaultPrng.init(70);
 
 pub fn run() !void {
     const gpa = std.heap.page_allocator;
+    const args = try std.process.argsAlloc(gpa);
+    defer std.process.argsFree(gpa, args);
+
+    var output_format = renderer.OutputFormat.PPM;
+
+    if (args.len > 1) {
+        if (std.mem.eql(u8, args[1], "png")) {
+            output_format = renderer.OutputFormat.PNG;
+        } else if (std.mem.eql(u8, args[1], "ppm")) {
+            output_format = renderer.OutputFormat.PPM;
+        } else {
+            std.log.warn("Unknown output format: {s}. Defaulting to PPM.", .{args[1]});
+        }
+    }
+
     var world = h.HittableList.init();
     defer world.deinit(gpa);
+
+    const aspect_ratio = 16.0 / 9.0;
+    const image_width = 400;
+    const samples_per_pixel = 10;
+    const max_depth = 10;
+    const fov = 20.0;
+
+    const lookfrom: v.Point = .{ 13, 2, 3 };
+    const lookat: v.Point = .{ 0, 0, 0 };
+    const vup: v.Vec3 = .{ 0, 1, 0 };
+
+    const defocus_angle = 0.6;
+    const defocus_dist = 10.0;
+
+    const camera = Camera.init(
+        aspect_ratio,
+        image_width,
+        samples_per_pixel,
+        max_depth,
+        fov,
+        lookat,
+        lookfrom,
+        vup,
+        defocus_angle,
+        defocus_dist,
+    );
 
     const rnd = rand_state.random();
     const ground_material: m.Material = .{ .lambertion = m.Lambertion{ .albedo = .{ 0.5, 0.5, 0.5 } } };
@@ -102,6 +100,5 @@ pub fn run() !void {
     const material3: m.Material = .{ .metal = m.Metal.init(.{ 0.7, 0.6, 0.5 }, 0.0) };
     try world.objects.append(gpa, .{ .sphere = h.Sphere.init(.{ 4, 1, 0 }, 1.0, material3) });
 
-    const f = PPMFile.init();
-    try f.write(&world);
+    try renderer.write(camera, &world, output_format);
 }
