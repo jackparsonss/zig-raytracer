@@ -76,22 +76,54 @@ pub const Camera = struct {
     }
 
     pub fn render(self: Camera, world: *h.HittableList, writer: *std.Io.Writer) !void {
-        try writer.print("P3\n{} {}\n255\n", .{ self.image_width, self.image_height });
+        var pbuf: [1024]u8 = undefined;
+        const pr = std.Progress.start(.{
+            .draw_buffer = &pbuf,
+            .estimated_total_items = self.image_height,
+            .root_name = "ray tracer",
+        });
+        defer pr.end();
+
+        const gpa = std.heap.smp_allocator;
+        var out_buf: [][3]u8 = try gpa.alloc([3]u8, self.image_width * self.image_height);
+        var pool: std.Thread.Pool = undefined;
+        try pool.init(.{ .allocator = gpa });
+
+        var wg: std.Thread.WaitGroup = .{};
+        try writer.print("P6\n{} {}\n255\n", .{ self.image_width, self.image_height });
+
         for (0..self.image_height) |j| {
-            const percentage = @as(u32, @intCast(j)) * 100 / self.image_height;
-            std.debug.print("\rProgress: {}% ", .{percentage});
-            for (0..self.image_width) |i| {
-                var pixel_color: vec.Color = vec.zero;
-                for (0..self.samples_per_pixel) |_| {
-                    const r = self.get_ray(i, j);
-                    pixel_color += ray_color(r, self.max_depth, world);
-                }
-                pixel_color *= vec.splat(self.pixel_samples_scale);
-                try vec.write_color(writer, pixel_color);
-            }
+            pool.spawnWg(&wg, computeRow, .{
+                self,
+                j,
+                world,
+                out_buf[j * self.image_width ..][0..self.image_width],
+                pr,
+            });
         }
 
-        std.debug.print("\rDone.                     \n", .{});
+        pool.waitAndWork(&wg);
+        try writer.writeSliceEndian(u8, std.mem.sliceAsBytes(out_buf), .little);
+        try writer.flush();
+    }
+
+    pub fn computeRow(self: Camera, height: usize, world: *h.HittableList, out: [][3]u8, pr: std.Progress.Node) void {
+        defer pr.completeOne();
+
+        for (0..self.image_width) |i| {
+            var pixel_color: vec.Color = vec.zero;
+
+            for (0..self.samples_per_pixel) |_| {
+                const r = self.get_ray(i, height);
+                pixel_color += ray_color(r, self.max_depth, world);
+            }
+            pixel_color *= vec.splat(self.pixel_samples_scale);
+
+            const x: u8 = @intFromFloat(vec.toGamma(pixel_color[0]) * 255.999);
+            const y: u8 = @intFromFloat(vec.toGamma(pixel_color[1]) * 255.999);
+            const z: u8 = @intFromFloat(vec.toGamma(pixel_color[2]) * 255.999);
+            out[i] = .{ x, y, z };
+        }
     }
 
     pub fn get_ray(self: Camera, i: usize, j: usize) Ray {
