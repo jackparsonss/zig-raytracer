@@ -7,9 +7,9 @@ pub threadlocal var rand_state = std.Random.DefaultPrng.init(70);
 
 pub const Metal = struct {
     albedo: v.Color,
-    fuzz: f32,
+    fuzz: f64,
 
-    pub fn init(albedo: v.Color, fuzz: f32) Metal {
+    pub fn init(albedo: v.Color, fuzz: f64) Metal {
         return Metal{
             .albedo = albedo,
             .fuzz = if (fuzz < 1.0) fuzz else 1.0,
@@ -18,10 +18,10 @@ pub const Metal = struct {
 
     pub fn scatter(self: Metal, ray: Ray, hit_record: *HitRecord, attenuation: *v.Color, scattered: *Ray) bool {
         const r = rand_state.random();
-        const reflected = ray.direction.reflect(hit_record.normal).unitVector().add(v.Vec3f32.randomUnitVector(r).scale(self.fuzz));
+        const reflected = v.reflect(v.unit(ray.direction), hit_record.normal) + v.splat(self.fuzz) * v.randomUnit(r);
         scattered.* = Ray{ .origin = hit_record.p, .direction = reflected };
         attenuation.* = self.albedo;
 
-        return true;
+        return v.dot(scattered.direction, hit_record.normal) > 0;
     }
 };

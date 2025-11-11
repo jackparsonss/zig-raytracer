@@ -11,8 +11,8 @@ pub const Lambertion = struct {
     pub fn scatter(self: Lambertion, ray: Ray, hit_record: *HitRecord, attenuation: *v.Color, scattered: *Ray) bool {
         _ = ray;
         const r = rand_state.random();
-        var scatter_direction = hit_record.normal.add(v.Vec3f32.randomUnitVector(r));
-        if (scatter_direction.nearZero()) {
+        var scatter_direction = hit_record.normal + v.randomUnit(r);
+        if (v.nearZero(scatter_direction)) {
             scatter_direction = hit_record.normal;
         }
 

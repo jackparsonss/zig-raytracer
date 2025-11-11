@@ -1,233 +1,139 @@
 const std = @import("std");
-const Interval = @import("interval.zig").Interval;
+const Random = std.Random;
+const assert = std.debug.assert;
+const Writer = std.Io.Writer;
+pub const Vec3 = @Vector(3, f64);
+pub const Point = Vec3;
+pub const Color = Vec3;
 
-pub fn Vec3(comptime T: type) type {
-    return struct {
-        const Self = @This();
+pub const zero: Vec3 = .{ 0, 0, 0 };
+pub const one: Vec3 = .{ 1, 1, 1 };
 
-        e: [3]T,
+pub fn x(v: Vec3) f64 {
+    return v[0];
+}
+pub fn y(v: Vec3) f64 {
+    return v[1];
+}
+pub fn z(v: Vec3) f64 {
+    return v[2];
+}
 
-        pub fn init(e0: T, e1: T, e2: T) Self {
-            return Self{ .e = .{ e0, e1, e2 } };
-        }
+pub fn magnitude(v: Vec3) f64 {
+    // const sqsum: f64 = v[0]*v[0] + v[1]*v[1] + v[2]*v[2];
+    // return std.math.sqrt(sqsum);
+    return @sqrt(magnitude2(v));
+}
+pub fn magnitude2(v: Vec3) f64 {
+    return @reduce(.Add, v * v);
+}
 
-        pub fn zero() Self {
-            return Self{ .e = .{ 0, 0, 0 } };
-        }
+pub fn splat(n: anytype) Vec3 {
+    switch (@TypeOf(n)) {
+        usize, comptime_int => return @splat(@floatFromInt(n)),
+        f64, comptime_float => return @splat(n),
+        else => unreachable,
+    }
+}
 
-        pub fn x(self: Self) T {
-            return self.e[0];
-        }
+pub fn reflect(v: Vec3, normal: Vec3) Vec3 {
+    return v - splat(2 * dot(v, normal)) * normal;
+}
 
-        pub fn y(self: Self) T {
-            return self.e[1];
-        }
+pub fn refract(v: Vec3, normal: Vec3, refraction_ratio: f64) Vec3 {
+    const cos_theta = @min(dot(-v, normal), 1.0);
+    const r_out_perp = splat(refraction_ratio) * (v + splat(cos_theta) * normal);
+    const r_out_parallel = splat(-@sqrt(@abs(1 - magnitude2(r_out_perp)))) *
+        normal;
+    return r_out_perp + r_out_parallel;
+}
 
-        pub fn z(self: Self) T {
-            return self.e[2];
-        }
+pub const Fmt = std.fmt.Alt(Vec3, format);
+fn format(v: Vec3, w: *Writer) !void {
+    try w.print("{d} {d} {d}", .{ v[0], v[1], v[2] });
+}
 
-        pub fn negate(self: Self) Self {
-            return Self{ .e = .{ -self.e[0], -self.e[1], -self.e[2] } };
-        }
+pub const ColorP6 = struct {
+    v: Vec3,
+    pub fn format(self: ColorP6, comptime fmt: []const u8, options: std.fmt.Options, w: anytype) !void {
+        _ = fmt;
+        _ = options;
+        const _x: u8 = @intFromFloat(toGamma(self.v[0]) * 255.999);
+        const _y: u8 = @intFromFloat(toGamma(self.v[1]) * 255.999);
+        const _z: u8 = @intFromFloat(toGamma(self.v[2]) * 255.999);
+        try w.writeByte(_x);
+        try w.writeByte(_y);
+        try w.writeByte(_z);
+    }
+};
 
-        pub fn addAssign(self: *Self, v: Self) void {
-            inline for (0..3) |i| {
-                self.e[i] += v.e[i];
-            }
-        }
+pub fn toGamma(color: f64) f64 {
+    return if (color > 0) @sqrt(color) else 0;
+}
 
-        pub fn mulAssign(self: *Self, t: T) void {
-            inline for (0..3) |i| {
-                self.e[i] *= t;
-            }
-        }
+pub fn dot(lhs: Vec3, rhs: Vec3) f64 {
+    return @reduce(.Add, lhs * rhs);
+}
 
-        pub fn divAssign(self: *Self, t: T) void {
-            const inv = 1.0 / t;
-            inline for (0..3) |i| {
-                self.e[i] *= inv;
-            }
-        }
-
-        pub fn length(self: Self) T {
-            return @sqrt(self.lengthSquared());
-        }
-
-        pub fn lengthSquared(self: Self) T {
-            var sum: T = 0;
-            inline for (0..3) |i| {
-                sum += self.e[i] * self.e[i];
-            }
-            return sum;
-        }
-
-        pub fn add(u: Self, v: Self) Self {
-            var result: Self = undefined;
-            inline for (0..3) |i| {
-                result.e[i] = u.e[i] + v.e[i];
-            }
-            return result;
-        }
-
-        pub fn sub(u: Self, v: Self) Self {
-            var result: Self = undefined;
-            inline for (0..3) |i| {
-                result.e[i] = u.e[i] - v.e[i];
-            }
-            return result;
-        }
-
-        pub fn mul(u: Self, v: Self) Self {
-            var result: Self = undefined;
-            inline for (0..3) |i| {
-                result.e[i] = u.e[i] * v.e[i];
-            }
-            return result;
-        }
-
-        pub fn scale(v: Self, t: T) Self {
-            var result: Self = undefined;
-            inline for (0..3) |i| {
-                result.e[i] = v.e[i] * t;
-            }
-            return result;
-        }
-
-        pub fn div(v: Self, t: T) Self {
-            const inv = 1.0 / t;
-            var result: Self = undefined;
-            inline for (0..3) |i| {
-                result.e[i] = v.e[i] * inv;
-            }
-            return result;
-        }
-
-        pub fn dot(u: Self, v: Self) T {
-            var sum: T = 0;
-            inline for (0..3) |i| {
-                sum += u.e[i] * v.e[i];
-            }
-            return sum;
-        }
-
-        pub fn cross(u: Self, v: Self) Self {
-            return Self.init(
-                u.e[1] * v.e[2] - u.e[2] * v.e[1],
-                u.e[2] * v.e[0] - u.e[0] * v.e[2],
-                u.e[0] * v.e[1] - u.e[1] * v.e[0],
-            );
-        }
-
-        pub fn unitVector(v: Self) Self {
-            return v.div(v.length());
-        }
-
-        pub fn random(r: std.Random) Self {
-            const T_info = @typeInfo(T);
-            return switch (T_info) {
-                .float => Self.init(r.float(T), r.float(T), r.float(T)),
-                .int => Self.init(r.int(T), r.int(T), r.int(T)),
-                else => @compileError("Unsupported type for random vector generation"),
-            };
-        }
-
-        pub fn randomRange(r: std.Random, min: T, max: T) Self {
-            const T_info = @typeInfo(T);
-            return switch (T_info) {
-                .float => {
-                    const xval = r.float(T) * (max - min) + min;
-                    const yval = r.float(T) * (max - min) + min;
-                    const zval = r.float(T) * (max - min) + min;
-                    return Self.init(xval, yval, zval);
-                },
-                .int => {
-                    const xval = r.intRange(T, min, max);
-                    const yval = r.intRange(T, min, max);
-                    const zval = r.intRange(T, min, max);
-                    return Self.init(xval, yval, zval);
-                },
-                else => @compileError("Unsupported type for random vector generation"),
-            };
-        }
-
-        pub fn randomUnitVector(r: std.Random) Self {
-            while (true) {
-                const p = Self.randomRange(r, -1, 1);
-                const lensq = p.lengthSquared();
-                if (std.math.floatEpsAt(T, 0) < lensq and lensq <= 1) {
-                    return p.div(@sqrt(lensq));
-                }
-            }
-        }
-
-        pub fn nearZero(self: Self) bool {
-            const s: T = 1e-8;
-            return (@abs(self.e[0]) < s) and (@abs(self.e[1]) < s) and (@abs(self.e[2]) < s);
-        }
-
-        pub fn reflect(v: Self, n: Self) Self {
-            return v.sub(n.scale(2 * v.dot(n)));
-        }
-
-        pub fn refract(uv: Self, n: Self, etai_over_etat: T) Self {
-            const cos_theta = @min(uv.negate().dot(n), 1.0);
-            const r_out_perp = uv.add(n.scale(cos_theta)).scale(etai_over_etat);
-            const r_out_parallel = n.scale(-@sqrt(@abs(1.0 - r_out_perp.lengthSquared())));
-            return r_out_perp.add(r_out_parallel);
-        }
-
-        pub fn randomOnHemisphere(r: std.Random, normal: Self) Self {
-            const on_unit_sphere = Self.randomUnitVector(r);
-            if (normal.dot(on_unit_sphere) > 0.0) {
-                return on_unit_sphere;
-            }
-
-            return on_unit_sphere.negate();
-        }
-
-        pub fn randomInUnitDisk(r: std.Random) Self {
-            while (true) {
-                const p = Self.init(
-                    r.float(T) * 2 - 1,
-                    r.float(T) * 2 - 1,
-                    0,
-                );
-                if (p.lengthSquared() < 1) {
-                    return p;
-                }
-            }
-        }
-
-        pub fn format(self: Self, writer: *std.Io.Writer) !void {
-            try writer.print("{d} {d} {d}\n", .{ self.e[0], self.e[1], self.e[2] });
-        }
+pub fn cross(lhs: Vec3, rhs: Vec3) Vec3 {
+    return .{
+        lhs[1] * rhs[2] - lhs[2] * rhs[1],
+        lhs[2] * rhs[0] - lhs[0] * rhs[2],
+        lhs[0] * rhs[1] - lhs[1] * rhs[0],
     };
 }
 
-pub const Vec3f64 = Vec3(f64);
-pub const Vec3f32 = Vec3(f32);
-pub const Point = Vec3f32;
-pub const Color = Vec3f32;
+pub fn unit(v: Vec3) Vec3 {
+    const mag = magnitude(v);
+    if (mag == 0) return zero;
 
-const intensity: Interval = Interval.init(0.000, 0.999);
-
-fn linearToGamma(linear_component: f32) f32 {
-    if (linear_component > 0) {
-        return @sqrt(linear_component);
-    }
-
-    return 0;
+    const mag3: Vec3 = @splat(mag);
+    return v / mag3;
 }
 
-pub fn write_color(writer: *std.Io.Writer, color: Color) !void {
-    const x = linearToGamma(color.x());
-    const y = linearToGamma(color.y());
-    const z = linearToGamma(color.z());
+pub fn nearZero(v: Vec3) bool {
+    const s = 1e-8;
+    return @reduce(.And, @abs(v) < splat(s));
+}
 
-    const ir: i32 = @intFromFloat(256 * intensity.clamp(x));
-    const ig: i32 = @intFromFloat(256 * intensity.clamp(y));
-    const ib: i32 = @intFromFloat(256 * intensity.clamp(z));
+pub fn random(r: std.Random) Vec3 {
+    return .{ r.float(f64), r.float(f64), r.float(f64) };
+}
 
-    try writer.print("{} {} {}\n", .{ ir, ig, ib });
+pub fn randomRange(r: std.Random, min: f64, max: f64) Vec3 {
+    assert(max >= min);
+    return .{
+        r.float(f64) * (max - min) + min,
+        r.float(f64) * (max - min) + min,
+        r.float(f64) * (max - min) + min,
+    };
+}
+
+pub fn randomUnit(r: Random) Vec3 {
+    while (true) {
+        const v = randomRange(r, -1, 1);
+        const m2 = magnitude2(v);
+        if (std.math.floatEpsAt(f64, 0) < m2 and m2 <= 1) {
+            // if (1e-160 < m2 and m2 <= 1) {
+            return v / @sqrt(splat(m2));
+        }
+    }
+}
+
+pub fn randomHemisphere(r: Random, normal: Vec3) Vec3 {
+    const v = randomUnit(r);
+    return if (dot(v, normal) > 0) v else -v;
+}
+
+pub fn randomUnitDisk(r: Random) Vec3 {
+    while (true) {
+        const p: Vec3 = .{
+            r.float(f64) * 2 - 1,
+            r.float(f64) * 2 - 1,
+            0,
+        };
+
+        if (magnitude2(p) < 1)
+            return p;
+    }
 }

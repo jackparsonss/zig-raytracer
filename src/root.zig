@@ -11,14 +11,14 @@ pub const PPMFile = struct {
 
     pub fn init() PPMFile {
         const aspect_ratio = 16.0 / 9.0;
-        const image_width = 1200;
-        const samples_per_pixel = 500;
-        const max_depth = 50;
+        const image_width = 400;
+        const samples_per_pixel = 10;
+        const max_depth = 10;
         const fov = 20.0;
 
-        const lookfrom = v.Point.init(13, 2, 3);
-        const lookat = v.Point.init(0, 0, 0);
-        const vup = v.Vec3f32.init(0, 1, 0);
+        const lookfrom: v.Point = .{ 13, 2, 3 };
+        const lookat: v.Point = .{ 0, 0, 0 };
+        const vup: v.Vec3 = .{ 0, 1, 0 };
 
         const defocus_angle = 0.6;
         const defocus_dist = 10.0;
@@ -58,49 +58,49 @@ pub fn run() !void {
     defer world.deinit(gpa);
 
     const rnd = rand_state.random();
-    const ground_material: m.Material = .{ .lambertion = m.Lambertion{ .albedo = v.Color.init(0.5, 0.5, 0.5) } };
-    try world.add(.{ .sphere = h.Sphere.init(v.Point.init(0, -1000, 0), 1000, ground_material) }, gpa);
+    const ground_material: m.Material = .{ .lambertion = m.Lambertion{ .albedo = .{ 0.5, 0.5, 0.5 } } };
+    try world.objects.append(gpa, .{ .sphere = h.Sphere.init(.{ 0, -1000, 0 }, 1000, ground_material) });
 
     var i: i32 = -11;
     while (i < 11) : (i += 1) {
         var j: i32 = -11;
         while (j < 11) : (j += 1) {
-            const choose_mat = rnd.float(f32);
-            const center = v.Point.init(
-                @as(f32, @floatFromInt(i)) + 0.9 * rnd.float(f32),
+            const choose_mat = rnd.float(f64);
+            const center: v.Point = .{
+                @as(f64, @floatFromInt(i)) + 0.9 * rnd.float(f64),
                 0.2,
-                @as(f32, @floatFromInt(j)) + 0.9 * rnd.float(f32),
-            );
+                @as(f64, @floatFromInt(j)) + 0.9 * rnd.float(f64),
+            };
 
-            if (center.sub(v.Point.init(4, 0.2, 0)).length() > 0.9) {
+            if (v.magnitude(center - v.Point{ 4, 0.2, 0 }) > 0.9) {
                 if (choose_mat < 0.8) {
                     // diffuse
-                    const albedo = v.Color.mul(v.Color.random(rnd), v.Color.random(rnd));
+                    const albedo = v.random(rnd) * v.random(rnd);
                     const sphere_material: m.Material = .{ .lambertion = m.Lambertion{ .albedo = albedo } };
-                    try world.add(.{ .sphere = h.Sphere.init(center, 0.2, sphere_material) }, gpa);
+                    try world.objects.append(gpa, .{ .sphere = h.Sphere.init(center, 0.2, sphere_material) });
                 } else if (choose_mat < 0.95) {
                     // metal
-                    const albedo = v.Color.randomRange(rnd, 0.5, 1);
-                    const fuzz = rnd.float(f32) * 0.5;
+                    const albedo = v.randomRange(rnd, 0.5, 1);
+                    const fuzz = rnd.float(f64) * 0.5;
                     const sphere_material: m.Material = .{ .metal = m.Metal.init(albedo, fuzz) };
-                    try world.add(.{ .sphere = h.Sphere.init(center, 0.2, sphere_material) }, gpa);
+                    try world.objects.append(gpa, .{ .sphere = h.Sphere.init(center, 0.2, sphere_material) });
                 } else {
                     // glass
                     const sphere_material: m.Material = .{ .dialetric = m.Dialetric.init(1.5) };
-                    try world.add(.{ .sphere = h.Sphere.init(center, 0.2, sphere_material) }, gpa);
+                    try world.objects.append(gpa, .{ .sphere = h.Sphere.init(center, 0.2, sphere_material) });
                 }
             }
         }
     }
 
     const material1: m.Material = .{ .dialetric = m.Dialetric.init(1.5) };
-    try world.add(.{ .sphere = h.Sphere.init(v.Point.init(0, 1, 0), 1.0, material1) }, gpa);
+    try world.objects.append(gpa, .{ .sphere = h.Sphere.init(.{ 0, 1, 0 }, 1.0, material1) });
 
-    const material2: m.Material = .{ .lambertion = m.Lambertion{ .albedo = v.Color.init(0.4, 0.2, 0.1) } };
-    try world.add(.{ .sphere = h.Sphere.init(v.Point.init(-4, 1, 0), 1.0, material2) }, gpa);
+    const material2: m.Material = .{ .lambertion = m.Lambertion{ .albedo = .{ 0.4, 0.2, 0.1 } } };
+    try world.objects.append(gpa, .{ .sphere = h.Sphere.init(.{ -4, 1, 0 }, 1.0, material2) });
 
-    const material3: m.Material = .{ .metal = m.Metal.init(v.Color.init(0.7, 0.6, 0.5), 0.0) };
-    try world.add(.{ .sphere = h.Sphere.init(v.Point.init(4, 1, 0), 1.0, material3) }, gpa);
+    const material3: m.Material = .{ .metal = m.Metal.init(.{ 0.7, 0.6, 0.5 }, 0.0) };
+    try world.objects.append(gpa, .{ .sphere = h.Sphere.init(.{ 4, 1, 0 }, 1.0, material3) });
 
     const f = PPMFile.init();
     try f.write(&world);
