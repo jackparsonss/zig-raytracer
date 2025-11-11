@@ -7,6 +7,6 @@ pub const Ray = struct {
     direction: Vec3,
 
     pub fn at(self: Ray, t: f64) Point {
-        return self.origin + self.direction * vector.splat(t);
+        return @mulAdd(Vec3, @splat(t), self.direction, self.origin);
     }
 };

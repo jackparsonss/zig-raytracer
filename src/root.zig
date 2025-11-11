@@ -12,8 +12,8 @@ pub const PPMFile = struct {
     pub fn init() PPMFile {
         const aspect_ratio = 16.0 / 9.0;
         const image_width = 400;
-        const samples_per_pixel = 10;
-        const max_depth = 10;
+        const samples_per_pixel = 500;
+        const max_depth = 50;
         const fov = 20.0;
 
         const lookfrom: v.Point = .{ 13, 2, 3 };

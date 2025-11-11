@@ -53,19 +53,13 @@ fn format(v: Vec3, w: *Writer) !void {
     try w.print("{d} {d} {d}", .{ v[0], v[1], v[2] });
 }
 
-pub const ColorP6 = struct {
-    v: Vec3,
-    pub fn format(self: ColorP6, comptime fmt: []const u8, options: std.fmt.Options, w: anytype) !void {
-        _ = fmt;
-        _ = options;
-        const _x: u8 = @intFromFloat(toGamma(self.v[0]) * 255.999);
-        const _y: u8 = @intFromFloat(toGamma(self.v[1]) * 255.999);
-        const _z: u8 = @intFromFloat(toGamma(self.v[2]) * 255.999);
-        try w.writeByte(_x);
-        try w.writeByte(_y);
-        try w.writeByte(_z);
-    }
-};
+// pub const Color = std.fmt.Alt(Vec3, colorFormat);
+// fn colorFormat(v: Vec3, w: *Writer) !void {
+//     const _x: u8 = @intFromFloat(toGamma(v[0]) * 255.999);
+//     const _y: u8 = @intFromFloat(toGamma(v[1]) * 255.999);
+//     const _z: u8 = @intFromFloat(toGamma(v[2]) * 255.999);
+//     try w.print("{d} {d} {d}\n", .{ _x, _y, _z });
+// }
 
 pub fn toGamma(color: f64) f64 {
     return if (color > 0) @sqrt(color) else 0;
@@ -136,4 +130,11 @@ pub fn randomUnitDisk(r: Random) Vec3 {
         if (magnitude2(p) < 1)
             return p;
     }
+}
+
+pub fn write_color(writer: *std.Io.Writer, color: Color) !void {
+    const _x: u8 = @intFromFloat(toGamma(color[0]) * 255.999);
+    const _y: u8 = @intFromFloat(toGamma(color[1]) * 255.999);
+    const _z: u8 = @intFromFloat(toGamma(color[2]) * 255.999);
+    try writer.print("{d} {d} {d}\n", .{ _x, _y, _z });
 }

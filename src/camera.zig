@@ -6,11 +6,6 @@ const Interval = @import("interval.zig").Interval;
 
 pub threadlocal var rand_state = std.Random.DefaultPrng.init(70);
 
-const pi: f64 = 3.1415926535897932385;
-fn degrees_to_radians(degrees: f64) f64 {
-    return degrees * pi / 180.0;
-}
-
 pub const Camera = struct {
     aspect_ratio: f64,
     image_width: u32,
@@ -36,7 +31,7 @@ pub const Camera = struct {
         image_height = if (image_height < 1) 1 else image_height;
 
         const center = lookfrom;
-        const theta = degrees_to_radians(fov);
+        const theta = std.math.degreesToRadians(fov);
         const hval = @tan(theta / 2.0);
 
         const viewport_height = 2 * hval * defocus_dist;
@@ -55,7 +50,7 @@ pub const Camera = struct {
         const viewport_upper_left = center - w * vec.splat(defocus_dist) - viewport_u / vec.splat(2) - viewport_v / vec.splat(2);
         const pixel00_loc = viewport_upper_left + (pixel_delta_u + pixel_delta_v) * vec.splat(0.5);
 
-        const defocus_radius = defocus_dist * @tan(degrees_to_radians(defocus_angle / 2.0));
+        const defocus_radius = defocus_dist * @tan(std.math.degreesToRadians(defocus_angle / 2.0));
         const pixel_samples_scale = 1.0 / @as(f64, @floatFromInt(samples_per_pixel));
 
         return .{
@@ -92,7 +87,7 @@ pub const Camera = struct {
                     pixel_color += ray_color(r, self.max_depth, world);
                 }
                 pixel_color *= vec.splat(self.pixel_samples_scale);
-                try writer.print("{}\n", .{vec.ColorP6{ .v = pixel_color }});
+                try vec.write_color(writer, pixel_color);
             }
         }
 
@@ -126,6 +121,7 @@ pub const Camera = struct {
     }
 
     pub fn ray_color(ray: Ray, depth: u32, world: *const h.HittableList) vec.Color {
+        @setFloatMode(.optimized);
         if (depth <= 0) {
             return vec.zero;
         }
