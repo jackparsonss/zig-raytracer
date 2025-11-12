@@ -9,9 +9,9 @@ pub const OutputFormat = enum {
 };
 
 pub const Renderer = struct {
-    camera: Camera,
+    camera: *Camera,
 
-    pub fn init(camera: Camera) Renderer {
+    pub fn init(camera: *Camera) Renderer {
         return Renderer{ .camera = camera };
     }
 
@@ -21,7 +21,7 @@ pub const Renderer = struct {
 };
 
 pub fn write(
-    camera: Camera,
+    camera: *Camera,
     world: *h.HittableList,
     output_format: OutputFormat,
 ) !void {
