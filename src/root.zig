@@ -27,7 +27,7 @@ pub fn run() !void {
         }
     }
 
-    var scene = try xml.parseXmlFile("src/maps/base.xml", gpa);
+    var scene = try xml.parseXmlFile("src/scenes/base.xml", gpa);
     defer scene.world.deinit(gpa);
 
     try renderer.write(&scene.camera, &scene.world, output_format);
