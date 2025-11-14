@@ -24,11 +24,12 @@ pub fn write(
     camera: *Camera,
     world: *h.HittableList,
     output_format: OutputFormat,
+    output_path: []const u8,
 ) !void {
     const renderer = Renderer.init(camera);
     switch (output_format) {
         .PPM => {
-            const file = try std.fs.cwd().createFile("output/image.ppm", .{ .truncate = true });
+            const file = try std.fs.cwd().createFile(output_path, .{ .truncate = true });
             defer file.close();
 
             var write_buffer: [4096]u8 = undefined;
@@ -57,7 +58,7 @@ pub fn write(
             }
 
             var write_buffer: [zigimg.io.DEFAULT_BUFFER_SIZE]u8 = undefined;
-            try image.writeToFilePath(allocator, "output/image.png", &write_buffer, .{ .png = .{} });
+            try image.writeToFilePath(allocator, output_path, &write_buffer, .{ .png = .{} });
             return;
         },
     }

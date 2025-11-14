@@ -16,19 +16,29 @@ pub fn run() !void {
     defer std.process.argsFree(gpa, args);
 
     var output_format = renderer.OutputFormat.PPM;
+    var scene_path: []const u8 = "src/scenes/base.xml";
+    var output_path: []const u8 = "output/image.ppm";
 
     if (args.len > 1) {
-        if (std.mem.eql(u8, args[1], "png")) {
+        scene_path = args[1];
+    }
+
+    if (args.len > 2) {
+        if (std.mem.eql(u8, args[2], "png")) {
             output_format = renderer.OutputFormat.PNG;
-        } else if (std.mem.eql(u8, args[1], "ppm")) {
+        } else if (std.mem.eql(u8, args[2], "ppm")) {
             output_format = renderer.OutputFormat.PPM;
         } else {
-            std.log.warn("Unknown output format: {s}. Defaulting to PPM.", .{args[1]});
+            std.log.warn("Unknown output format: {s}. Defaulting to PPM.", .{args[2]});
         }
     }
 
-    var scene = try xml.parseXmlFile("src/scenes/base.xml", gpa);
+    if (args.len > 3) {
+        output_path = args[3];
+    }
+
+    var scene = try xml.parseXmlFile(scene_path, gpa);
     defer scene.world.deinit(gpa);
 
-    try renderer.write(&scene.camera, &scene.world, output_format);
+    try renderer.write(&scene.camera, &scene.world, output_format, output_path);
 }

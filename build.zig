@@ -60,10 +60,31 @@ pub fn build(b: *std.Build) void {
     const run_step = b.step("run", "Run the app");
     const run_cmd = b.addRunArtifact(exe);
     run_step.dependOn(&run_cmd.step);
+
+    const format = b.option(
+        []const u8,
+        "format",
+        "The output format, either 'ppm' or 'png'",
+    ) orelse "ppm";
+
+    const scene_name = b.option(
+        []const u8,
+        "scene",
+        "The name of the scene file in 'src/scenes/'",
+    ) orelse "base.xml";
+
+    const scene_path = b.fmt("src/scenes/{s}", .{scene_name});
+
+    const output_name = b.option(
+        []const u8,
+        "output",
+        "The name of the file to output to in 'output/'",
+    ) orelse "image";
+
+    const output_path = b.fmt("output/{s}.{s}", .{ output_name, format });
+
+    run_cmd.addArgs(&.{ scene_path, format, output_path });
     run_cmd.step.dependOn(b.getInstallStep());
-    if (b.args) |args| {
-        run_cmd.addArgs(args);
-    }
 
     const mod_tests = b.addTest(.{
         .root_module = mod,
