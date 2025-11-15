@@ -1,4 +1,5 @@
 const std = @import("std");
+const ztracy = @import("ztracy");
 const HitRecord = @import("../hittable/hit_record.zig").HitRecord;
 const Ray = @import("../ray.zig").Ray;
 const v = @import("../vector.zig");
@@ -17,6 +18,8 @@ pub const Metal = struct {
     }
 
     pub fn scatter(self: Metal, ray: Ray, hit_record: *HitRecord, attenuation: *v.Color, scattered: *Ray) bool {
+        const tracy_zone = ztracy.Zone(@src());
+        defer tracy_zone.End();
         const r = rand_state.random();
         const reflected = v.reflect(v.unit(ray.direction), hit_record.normal) + v.splat(self.fuzz) * v.randomUnit(r);
         scattered.* = Ray{ .origin = hit_record.p, .direction = reflected };

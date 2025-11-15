@@ -13,7 +13,8 @@ const xml = @import("xml.zig");
 pub threadlocal var rand_state = std.Random.DefaultPrng.init(70);
 
 pub fn run() !void {
-    const gpa = std.heap.page_allocator;
+    var gpa_state = ztracy.TracyAllocator.init(std.heap.page_allocator);
+    const gpa = gpa_state.allocator();
     const args = try std.process.argsAlloc(gpa);
     defer std.process.argsFree(gpa, args);
 
@@ -42,7 +43,7 @@ pub fn run() !void {
     var scene = try xml.parseXmlFile(scene_path, gpa);
     defer scene.world.deinit(gpa);
 
-    const tracy_zone = ztracy.ZoneNC(@src(), "Compute Magic", 0x00_ff_00_00);
+    const tracy_zone = ztracy.Zone(@src());
     defer tracy_zone.End();
     try renderer.write(&scene.camera, &scene.world, output_format, output_path);
 }

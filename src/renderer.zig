@@ -2,6 +2,7 @@ const std = @import("std");
 const zigimg = @import("zigimg");
 const h = @import("hittable.zig");
 const Camera = @import("camera.zig").Camera;
+const ztracy = @import("ztracy");
 
 pub const OutputFormat = enum {
     PPM,
@@ -27,6 +28,7 @@ pub fn write(
     output_path: []const u8,
 ) !void {
     const renderer = Renderer.init(camera);
+    const pixel_buffer = try renderer.camera.renderToBuffer(world);
     switch (output_format) {
         .PPM => {
             const file = try std.fs.cwd().createFile(output_path, .{ .truncate = true });
@@ -36,14 +38,13 @@ pub fn write(
             var file_writer = file.writer(&write_buffer);
             const writer: *std.Io.Writer = &file_writer.interface;
 
-            const pixel_buffer = try renderer.camera.renderToBuffer(world);
             try writer.print("P6\n{} {}\n255\n", .{ camera.image_width, camera.image_height });
             try writer.writeSliceEndian(u8, std.mem.sliceAsBytes(pixel_buffer), .little);
             try writer.flush();
         },
         .PNG => {
-            const allocator = std.heap.smp_allocator;
-            const pixel_buffer = try renderer.camera.renderToBuffer(world);
+            var smp_allocator_state = ztracy.TracyAllocator.init(std.heap.smp_allocator);
+            const allocator = smp_allocator_state.allocator();
             defer allocator.free(pixel_buffer);
 
             var image = try zigimg.Image.create(allocator, camera.image_width, camera.image_height, .rgba32);

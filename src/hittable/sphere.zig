@@ -1,3 +1,5 @@
+const std = @import("std");
+const ztracy = @import("ztracy");
 const HitRecord = @import("hit_record.zig").HitRecord;
 const Ray = @import("../ray.zig").Ray;
 const v = @import("../vector.zig");
@@ -14,6 +16,8 @@ pub const Sphere = struct {
     }
 
     pub fn hit(self: Sphere, ray: Ray, ray_t: Interval, rec: *HitRecord) bool {
+        const tracy_zone = ztracy.Zone(@src());
+        defer tracy_zone.End();
         const oc = self.center - ray.origin;
         const a = v.magnitude2(ray.direction);
         const h = v.dot(ray.direction, oc);

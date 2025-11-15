@@ -1,4 +1,5 @@
 const std = @import("std");
+const ztracy = @import("ztracy");
 const HitRecord = @import("../hittable/hit_record.zig").HitRecord;
 const Ray = @import("../ray.zig").Ray;
 const v = @import("../vector.zig");
@@ -9,6 +10,8 @@ pub const Lambertion = struct {
     albedo: v.Color,
 
     pub fn scatter(self: Lambertion, ray: Ray, hit_record: *HitRecord, attenuation: *v.Color, scattered: *Ray) bool {
+        const tracy_zone = ztracy.Zone(@src());
+        defer tracy_zone.End();
         _ = ray;
         const r = rand_state.random();
         var scatter_direction = hit_record.normal + v.randomUnit(r);

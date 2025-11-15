@@ -1,4 +1,5 @@
 const std = @import("std");
+const ztracy = @import("ztracy");
 const HitRecord = @import("../hittable/hit_record.zig").HitRecord;
 const Ray = @import("../ray.zig").Ray;
 const v = @import("../vector.zig");
@@ -21,6 +22,8 @@ pub const Dialetric = struct {
     }
 
     pub fn scatter(self: Dialetric, ray: Ray, hit_record: *HitRecord, attenuation: *v.Color, scattered: *Ray) bool {
+        const tracy_zone = ztracy.Zone(@src());
+        defer tracy_zone.End();
         attenuation.* = v.one;
         const ri: f64 = if (hit_record.front_face) 1.0 / self.refraction_index else self.refraction_index;
 

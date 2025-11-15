@@ -1,4 +1,5 @@
 const std = @import("std");
+const ztracy = @import("ztracy");
 
 const HitRecord = @import("hit_record.zig").HitRecord;
 const Hittable = @import("hittable.zig").Hittable;
@@ -25,6 +26,8 @@ pub const HittableList = struct {
     }
 
     pub fn hit(self: HittableList, r: Ray, ray_t: Interval, rec: *HitRecord) bool {
+        const tracy_zone = ztracy.Zone(@src());
+        defer tracy_zone.End();
         var temp_rec: HitRecord = undefined;
         var hit_anything = false;
         var closest_so_far = ray_t.max;

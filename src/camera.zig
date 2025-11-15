@@ -1,4 +1,5 @@
 const std = @import("std");
+const ztracy = @import("ztracy");
 const vec = @import("vector.zig");
 const h = @import("hittable.zig");
 const Ray = @import("ray.zig").Ray;
@@ -76,6 +77,9 @@ pub const Camera = struct {
     }
 
     pub fn renderToBuffer(self: Camera, world: *h.HittableList) ![]const [3]u8 {
+        const tracy_zone = ztracy.Zone(@src());
+        defer tracy_zone.End();
+
         var pbuf: [1024]u8 = undefined;
         const pr = std.Progress.start(.{
             .draw_buffer = &pbuf,
@@ -84,7 +88,8 @@ pub const Camera = struct {
         });
         defer pr.end();
 
-        const gpa = std.heap.smp_allocator;
+        var smp_allocator_state = ztracy.TracyAllocator.init(std.heap.smp_allocator);
+        const gpa = smp_allocator_state.allocator();
         var out_buf: [][3]u8 = try gpa.alloc([3]u8, self.image_width * self.image_height);
         var pool: std.Thread.Pool = undefined;
         try pool.init(.{ .allocator = gpa });
@@ -106,6 +111,15 @@ pub const Camera = struct {
     }
 
     pub fn computeRow(self: Camera, height: usize, world: *h.HittableList, out: [][3]u8, pr: std.Progress.Node) void {
+        var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+        const allocator = gpa.allocator();
+        const threadName = std.fmt.allocPrintSentinel(allocator, "Thread {d}", .{height}, 0) catch unreachable;
+        ztracy.SetThreadName(threadName);
+        allocator.free(threadName);
+        defer _ = gpa.deinit();
+
+        const tracy_zone = ztracy.Zone(@src());
+        defer tracy_zone.End();
         defer pr.completeOne();
 
         for (0..self.image_width) |i| {
@@ -151,6 +165,8 @@ pub const Camera = struct {
     }
 
     pub fn ray_color(ray: Ray, depth: u32, world: *const h.HittableList) vec.Color {
+        const tracy_zone = ztracy.Zone(@src());
+        defer tracy_zone.End();
         @setFloatMode(.optimized);
         if (depth <= 0) {
             return vec.zero;
