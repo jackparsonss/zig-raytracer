@@ -4,25 +4,10 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    // Get libxml2 flags from pkg-config
-    const xml2_cflags = b.run(&.{ "pkg-config", "--cflags", "libxml-2.0" });
-
     const mod = b.addModule("raytracer", .{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
     });
-
-    // Link to the module that uses @cImport
-    mod.linkSystemLibrary("xml2", .{});
-
-    // Parse and add include paths from pkg-config
-    var it = std.mem.tokenizeScalar(u8, xml2_cflags, ' ');
-    while (it.next()) |flag| {
-        if (std.mem.startsWith(u8, flag, "-I")) {
-            const path = flag[2..];
-            mod.addIncludePath(.{ .cwd_relative = path });
-        }
-    }
 
     const exe = b.addExecutable(.{
         .name = "raytracer",
@@ -39,12 +24,21 @@ pub fn build(b: *std.Build) void {
     exe.linkLibC();
     exe.linkSystemLibrary("xml2");
 
-    // Add include path to exe as well
-    it = std.mem.tokenizeScalar(u8, xml2_cflags, ' ');
-    while (it.next()) |flag| {
-        if (std.mem.startsWith(u8, flag, "-I")) {
-            const path = flag[2..];
-            exe.root_module.addIncludePath(.{ .cwd_relative = path });
+    if (target.result.os.tag == .macos) {
+        mod.addIncludePath(.{ .cwd_relative = "/opt/homebrew/include/libxml2" });
+        exe.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
+        exe.root_module.addIncludePath(.{ .cwd_relative = "/opt/homebrew/include/libxml2" });
+    } else {
+        const xml2_cflags_out = b.run(&.{ "pkg-config", "--cflags", "libxml-2.0" });
+        const xml2_cflags = std.mem.trim(u8, xml2_cflags_out, " \n\r");
+        // Parse and add include paths from pkg-config
+        var it = std.mem.tokenizeScalar(u8, xml2_cflags, ' ');
+        while (it.next()) |flag| {
+            if (std.mem.startsWith(u8, flag, "-I")) {
+                const path = flag[2..];
+                mod.addIncludePath(.{ .cwd_relative = path });
+                exe.root_module.addIncludePath(.{ .cwd_relative = path });
+            }
         }
     }
 
