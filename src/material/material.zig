@@ -10,7 +10,7 @@ pub const Material = union(enum) {
     lambertion: Lambertion,
     dialetric: Dialetric,
 
-    pub fn scatter(self: Material, ray: Ray, hit_record: *HitRecord, attenuation: *v.Color, scattered: *Ray) bool {
+    pub fn scatter(self: Material, ray: *const Ray, hit_record: *HitRecord, attenuation: *v.Color, scattered: *Ray) bool {
         return switch (self) {
             .metal => |m| m.scatter(ray, hit_record, attenuation, scattered),
             .lambertion => |l| l.scatter(ray, hit_record, attenuation, scattered),

@@ -15,7 +15,7 @@ pub const Sphere = struct {
         return .{ .center = center, .radius = @max(0, radius), .material = material };
     }
 
-    pub fn hit(self: Sphere, ray: Ray, ray_t: Interval, rec: *HitRecord) bool {
+    pub fn hit(self: Sphere, ray: *const Ray, ray_t: Interval, rec: *HitRecord) bool {
         const tracy_zone = ztracy.Zone(@src());
         defer tracy_zone.End();
         const oc = self.center - ray.origin;
@@ -40,7 +40,7 @@ pub const Sphere = struct {
         rec.t = root;
         rec.p = ray.at(rec.t);
         const outward_normal = (rec.p - self.center) / v.splat(self.radius);
-        rec.set_face_normal(&ray, outward_normal);
+        rec.set_face_normal(ray, outward_normal);
         rec.material = self.material;
 
         return true;

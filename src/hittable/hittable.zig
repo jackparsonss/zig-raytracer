@@ -6,7 +6,7 @@ const Interval = @import("../interval.zig").Interval;
 pub const Hittable = union(enum) {
     sphere: Sphere,
 
-    pub fn hit(self: Hittable, ray: Ray, ray_t: Interval, rec: *HitRecord) bool {
+    pub fn hit(self: Hittable, ray: *const Ray, ray_t: Interval, rec: *HitRecord) bool {
         return switch (self) {
             .sphere => |sphere| sphere.hit(ray, ray_t, rec),
         };

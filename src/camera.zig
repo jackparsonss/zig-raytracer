@@ -130,7 +130,7 @@ pub const Camera = struct {
 
             for (0..self.samples_per_pixel) |_| {
                 const r = self.get_ray(i, height);
-                pixel_color += ray_color(r, self.max_depth, world);
+                pixel_color += ray_color(&r, self.max_depth, world);
             }
             pixel_color *= vec.splat(self.pixel_samples_scale);
 
@@ -153,7 +153,7 @@ pub const Camera = struct {
         const ray_origin = if (self.defocus_angle <= 0) self.center else self.defocus_sample_disk();
         const ray_direction = pixel_sample - ray_origin;
 
-        return Ray{ .origin = ray_origin, .direction = ray_direction };
+        return Ray.init(ray_origin, ray_direction);
     }
 
     fn defocus_sample_disk(self: Camera) vec.Vec3 {
@@ -167,7 +167,7 @@ pub const Camera = struct {
         return .{ rand.float(f64) - 0.5, rand.float(f64) - 0.5, 0 };
     }
 
-    pub fn ray_color(ray: Ray, depth: u32, world: *const h.HittableList) vec.Color {
+    pub fn ray_color(ray: *const Ray, depth: u32, world: *const h.HittableList) vec.Color {
         const tracy_zone = ztracy.Zone(@src());
         defer tracy_zone.End();
         @setFloatMode(.optimized);
@@ -180,7 +180,7 @@ pub const Camera = struct {
             var scattered: Ray = undefined;
             var attenuation: vec.Color = undefined;
             if (rec.material.scatter(ray, &rec, &attenuation, &scattered)) {
-                return attenuation * ray_color(scattered, depth - 1, world);
+                return attenuation * ray_color(&scattered, depth - 1, world);
             }
             return vec.zero;
         }

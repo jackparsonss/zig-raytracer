@@ -17,12 +17,12 @@ pub const Metal = struct {
         };
     }
 
-    pub fn scatter(self: Metal, ray: Ray, hit_record: *HitRecord, attenuation: *v.Color, scattered: *Ray) bool {
+    pub fn scatter(self: Metal, ray: *const Ray, hit_record: *HitRecord, attenuation: *v.Color, scattered: *Ray) bool {
         const tracy_zone = ztracy.Zone(@src());
         defer tracy_zone.End();
         const r = rand_state.random();
         const reflected = v.reflect(v.unit(ray.direction), hit_record.normal) + v.splat(self.fuzz) * v.randomUnit(r);
-        scattered.* = Ray{ .origin = hit_record.p, .direction = reflected };
+        scattered.* = Ray.init(hit_record.p, reflected);
         attenuation.* = self.albedo;
 
         return v.dot(scattered.direction, hit_record.normal) > 0;

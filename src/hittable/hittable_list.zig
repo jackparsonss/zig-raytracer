@@ -25,7 +25,7 @@ pub const HittableList = struct {
         try self.objects.append(gpa, object);
     }
 
-    pub fn hit(self: HittableList, r: Ray, ray_t: Interval, rec: *HitRecord) bool {
+    pub fn hit(self: HittableList, r: *const Ray, ray_t: Interval, rec: *HitRecord) bool {
         const tracy_zone = ztracy.Zone(@src());
         defer tracy_zone.End();
         var temp_rec: HitRecord = undefined;

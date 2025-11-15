@@ -9,7 +9,7 @@ var rand_state = std.Random.DefaultPrng.init(70);
 pub const Lambertion = struct {
     albedo: v.Color,
 
-    pub fn scatter(self: Lambertion, ray: Ray, hit_record: *HitRecord, attenuation: *v.Color, scattered: *Ray) bool {
+    pub fn scatter(self: Lambertion, ray: *const Ray, hit_record: *HitRecord, attenuation: *v.Color, scattered: *Ray) bool {
         const tracy_zone = ztracy.Zone(@src());
         defer tracy_zone.End();
         _ = ray;
@@ -19,10 +19,7 @@ pub const Lambertion = struct {
             scatter_direction = hit_record.normal;
         }
 
-        scattered.* = Ray{
-            .origin = hit_record.p,
-            .direction = scatter_direction,
-        };
+        scattered.* = Ray.init(hit_record.p, scatter_direction);
         attenuation.* = self.albedo;
 
         return true;

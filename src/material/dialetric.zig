@@ -21,7 +21,7 @@ pub const Dialetric = struct {
         };
     }
 
-    pub fn scatter(self: Dialetric, ray: Ray, hit_record: *HitRecord, attenuation: *v.Color, scattered: *Ray) bool {
+    pub fn scatter(self: Dialetric, ray: *const Ray, hit_record: *HitRecord, attenuation: *v.Color, scattered: *Ray) bool {
         const tracy_zone = ztracy.Zone(@src());
         defer tracy_zone.End();
         attenuation.* = v.one;
@@ -37,11 +37,7 @@ pub const Dialetric = struct {
         } else {
             direction = v.refract(unit_direction, hit_record.normal, ri);
         }
-
-        scattered.* = Ray{
-            .origin = hit_record.p,
-            .direction = direction,
-        };
+        scattered.* = Ray.init(hit_record.p, direction);
 
         return true;
     }
