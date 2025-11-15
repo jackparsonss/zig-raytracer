@@ -1,4 +1,6 @@
 const std = @import("std");
+const ztracy = @import("ztracy");
+
 const v = @import("vector.zig");
 const Ray = @import("ray.zig").Ray;
 const h = @import("hittable.zig");
@@ -40,5 +42,7 @@ pub fn run() !void {
     var scene = try xml.parseXmlFile(scene_path, gpa);
     defer scene.world.deinit(gpa);
 
+    const tracy_zone = ztracy.ZoneNC(@src(), "Compute Magic", 0x00_ff_00_00);
+    defer tracy_zone.End();
     try renderer.write(&scene.camera, &scene.world, output_format, output_path);
 }
