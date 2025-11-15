@@ -92,7 +92,10 @@ pub const Camera = struct {
         const gpa = smp_allocator_state.allocator();
         var out_buf: [][3]u8 = try gpa.alloc([3]u8, self.image_width * self.image_height);
         var pool: std.Thread.Pool = undefined;
-        try pool.init(.{ .allocator = gpa });
+        try pool.init(.{
+            .allocator = gpa,
+            .n_jobs = (std.Thread.getCpuCount() catch unreachable) - 1,
+        });
 
         var wg: std.Thread.WaitGroup = .{};
 
